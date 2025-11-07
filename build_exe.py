@@ -18,6 +18,9 @@ def build_executable():
         '--name=ChatbotRAG',            # Nome do executável
         '--icon=NONE',                  # Sem ícone customizado
         '--clean',                      # Limpar cache
+        # Adicionar hidden imports que resolvem problemas do ChromaDB em tempo de execução
+        '--hidden-import=chromadb.telemetry.product.posthog',
+        '--hidden-import=chromadb.api.rust',
         'main.py'
     ]
     

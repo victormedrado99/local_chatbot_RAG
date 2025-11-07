@@ -153,6 +153,7 @@ class ChatbotRAGGUI:
         # Bind de teclas para o terminal
         self.terminal_output.bind('<Return>', self.handle_input)
         self.terminal_output.bind('<KeyPress>', self.on_key_press)
+        self.terminal_output.bind('<KeyRelease>', self.on_key_release)  # Para aplicar cor
         
         # Variável para rastrear a linha de input
         self.input_start = '1.0'
@@ -206,6 +207,19 @@ class ChatbotRAGGUI:
             self.terminal_output.mark_set(tk.INSERT, tk.END)
             return 'break'
     
+    def on_key_release(self, event):
+        """Aplica cor azul ao texto do usuário enquanto digita"""
+        if self.processing or event.keysym == 'Return':
+            return
+        
+        # Aplicar cor azul APENAS ao texto digitado pelo usuário
+        # Usar END-1c para não incluir o newline final
+        try:
+            end_pos = self.terminal_output.index("end-1c")
+            self.terminal_output.tag_add('user_color', self.input_start, end_pos)
+        except:
+            pass
+    
     def handle_input(self, event):
         """Processa o input quando Enter é pressionado"""
         if self.processing:
@@ -215,9 +229,12 @@ class ChatbotRAGGUI:
         user_input = self.terminal_output.get(self.input_start, tk.END).strip()
         
         if user_input:
-            # Exibir a mensagem do usuário em azul
+            # Aplicar cor azul final à mensagem do usuário antes de processar
+            current_end = self.terminal_output.index("end-1c")
+            self.terminal_output.tag_add('user_color', self.input_start, current_end)
+            
+            # Adicionar quebra de linha (SEM tag de cor)
             self.terminal_output.insert(tk.END, '\n')
-            self.output_queue.put(('__USER__', f'👤 Você: {user_input}\n\n'))
             
             # Verificar se estamos aguardando input para remoção
             if self.awaiting_removal_input:
@@ -550,14 +567,21 @@ Resposta:"""
             prompt = ChatPromptTemplate.from_template(template)
             
             chain = prompt | self.llm | StrOutputParser()
-            response = chain.invoke({'context': context, 'question': query})
             
-            # Enviar resposta
-            self.output_queue.put(('__BOT__', f'\n🤖 Resposta:\n{response}\n'))
+            # Enviar cabeçalho da resposta
+            self.output_queue.put(('__BOT__', '\n🤖 Resposta:\n'))
             
-            # Citar fontes de forma mais compacta
+            # STREAMING: Receber e enviar chunks em tempo real
+            for chunk in chain.stream({'context': context, 'question': query}):
+                if chunk:
+                    self.output_queue.put(('__BOT__', chunk))
+            
+            # Quebra de linha final após a resposta completa
+            self.output_queue.put(('__BOT__', '\n'))
+            
+            # Citar fontes com trechos relevantes
             if relevant_docs:
-                self.output_queue.put(('__SOURCE_HEADER__', '\n📚 Fontes:\n'))
+                self.output_queue.put(('__SOURCE_HEADER__', '\n📚 Fontes consultadas:\n\n'))
                 for idx, doc in enumerate(relevant_docs, 1):
                     source = doc.metadata.get('source', 'Fonte desconhecida')
                     # Extrair apenas o nome do arquivo
@@ -566,7 +590,23 @@ Resposta:"""
                     page = doc.metadata.get('page', '')
                     page_info = f' (pág. {page + 1})' if page != '' else ''
                     
-                    fonte_msg = f'  [{idx}] {source_name}{page_info}\n'
+                    # Pegar trecho relevante do documento (primeiras 200 caracteres)
+                    snippet = doc.page_content.strip()
+                    # Limpar quebras de linha excessivas e espaços
+                    snippet = ' '.join(snippet.split())
+                    
+                    # Limitar tamanho do trecho
+                    max_length = 200
+                    if len(snippet) > max_length:
+                        # Tentar cortar em uma palavra completa
+                        snippet = snippet[:max_length]
+                        last_space = snippet.rfind(' ')
+                        if last_space > max_length * 0.8:  # Se o último espaço está próximo do fim
+                            snippet = snippet[:last_space]
+                        snippet += '...'
+                    
+                    # Formatar fonte com cabeçalho e citação indentada
+                    fonte_msg = f'  [{idx}] {source_name}{page_info}\n      "{snippet}"\n\n'
                     self.output_queue.put(('__SOURCE_ITEM__', fonte_msg))
         except Exception as e:
             self.output_queue.put(('__BOT__', f'\n❌ Erro: {str(e)}\n\n'))
