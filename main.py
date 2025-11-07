@@ -77,9 +77,10 @@ LLM_MODEL = 'deepseek-r1:8b'
 class ChatbotRAGGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title('Chatbot RAG')
+        self.root.title('◢◤ CHATBOT RAG v1.0 ◥◣')
         self.root.geometry('1000x700')
-        self.root.configure(bg='#2b2b2b')
+        # Fundo preto total - estilo terminal retro
+        self.root.configure(bg='#000000')
         
         self.output_queue = queue.Queue()
         self.processing = False
@@ -100,52 +101,86 @@ class ChatbotRAGGUI:
         self.check_queue()
         
         # Iniciar a inicialização pesada em uma thread DEPOIS de criar widgets
-        self.output_queue.put(('__BOT__', 'Inicializando modelos... Isso pode levar um momento.\n'))
+        self.output_queue.put(('__BOT__', '\n>>> CARREGANDO MODELOS DE IA...\n'))
+        self.output_queue.put(('__BOT__', '>>> Aguarde, isso pode levar alguns momentos.\n\n'))
         threading.Thread(target=self.initialize_components, daemon=True).start()
         
     def setup_style(self):
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('Dark.TFrame', background='#2b2b2b')
-        style.configure('Dark.TLabel', background='#2b2b2b', foreground='white')
-        style.configure('Dark.TButton', background='#404040', foreground='white')
+        
+        # Estilo RETRO anos 90 - Fundo preto, bordas verde neon
+        style.configure('Dark.TFrame', background='#000000')
+        
+        # Label com fonte tipo terminal DOS
+        style.configure('Dark.TLabel', 
+                       background='#000000', 
+                       foreground='#00ff00',  # Verde neon
+                       font=('Courier New', 12, 'bold'))
+        
+        # Botões estilo terminal retro - preto com borda verde
+        style.configure('Retro.TButton',
+                       background='#0a0a0a',
+                       foreground='#00ff00',
+                       borderwidth=2,
+                       relief='raised',
+                       font=('Courier New', 9, 'bold'))
+        
+        # Efeito hover nos botões
+        style.map('Retro.TButton',
+                 background=[('active', '#1a1a1a'), ('pressed', '#00ff00')],
+                 foreground=[('active', '#00ff00'), ('pressed', '#000000')])
         
     def create_widgets(self):
         main_frame = ttk.Frame(self.root, style='Dark.TFrame')
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        title = ttk.Label(main_frame, text='Chatbot RAG', style='Dark.TLabel')
+        # Título estilo ASCII art retro
+        title = ttk.Label(main_frame, 
+                         text='╔══════════════════════════════════════╗\n'
+                              '║    CHATBOT RAG - TERMINAL v1.0      ║\n'
+                              '╚══════════════════════════════════════╝',
+                         style='Dark.TLabel',
+                         justify='center')
         title.pack(pady=(0, 10))
         
+        # Frame dos botões com visual retro
         btn_frame = ttk.Frame(main_frame, style='Dark.TFrame')
         btn_frame.pack(fill=tk.X, pady=(0, 10))
         
-        ttk.Button(btn_frame, text='Adicionar Documento', command=self.add_pdf).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(btn_frame, text='Listar Arquivos', command=self.list_files).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(btn_frame, text='Remover Documento', command=self.remove_document).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(btn_frame, text='Ajuda', command=self.show_help).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(btn_frame, text='Limpar', command=self.clear_terminal).pack(side=tk.RIGHT)
+        # Botões estilo terminal retro com emojis ASCII
+        ttk.Button(btn_frame, text='[+] ADD DOC', style='Retro.TButton', command=self.add_pdf).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(btn_frame, text='[≡] LIST', style='Retro.TButton', command=self.list_files).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(btn_frame, text='[-] REMOVE', style='Retro.TButton', command=self.remove_document).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(btn_frame, text='[?] HELP', style='Retro.TButton', command=self.show_help).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(btn_frame, text='[X] CLEAR', style='Retro.TButton', command=self.clear_terminal).pack(side=tk.RIGHT)
         
         term_frame = ttk.Frame(main_frame, style='Dark.TFrame')
         term_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Terminal com input integrado
+        # Terminal estilo CRT monitor dos anos 90
         self.terminal_output = scrolledtext.ScrolledText(
             term_frame, 
             height=20, 
-            bg='#1e1e1e', 
-            fg='#00ff00',  # Verde padrão para bot
-            font=('Courier New', 10),  # Courier New funciona melhor com cores
+            bg='#000000',  # Preto total
+            fg='#00ff00',  # Verde fosforescente
+            font=('Courier New', 10, 'bold'),  # Bold para simular CRT
             wrap=tk.WORD,
-            insertbackground='#00ff00',  # Cursor verde
-            state='normal'  # Sempre normal para permitir edição
+            insertbackground='#00ff00',  # Cursor verde piscante
+            insertwidth=8,  # Cursor mais largo estilo DOS
+            state='normal',
+            relief='sunken',
+            borderwidth=3,
+            highlightthickness=2,
+            highlightbackground='#00ff00',  # Borda verde
+            highlightcolor='#00ff00'
         )
         self.terminal_output.pack(fill=tk.BOTH, expand=True)
         
-        # Configurar tags de cores com MAIOR PRIORIDADE
-        self.terminal_output.tag_configure('bot_color', foreground='#00ff00')  # Verde
-        self.terminal_output.tag_configure('user_color', foreground='#00bfff')  # Azul
-        self.terminal_output.tag_configure('source_color', foreground='#ffa500')  # Laranja
+        # Cores estilo terminal retro
+        self.terminal_output.tag_configure('bot_color', foreground='#00ff00')      # Verde neon
+        self.terminal_output.tag_configure('user_color', foreground='#00ffff')    # Ciano (azul dos anos 90)
+        self.terminal_output.tag_configure('source_color', foreground='#ffff00')  # Amarelo (mais retro que laranja)
         self.terminal_output.tag_configure('prompt_color', foreground='#ffffff')  # Branco
         
         # REMOVER tag_raise - não é necessário e pode causar problemas
@@ -158,9 +193,13 @@ class ChatbotRAGGUI:
         # Variável para rastrear a linha de input
         self.input_start = '1.0'
         
-        # Mensagens de boas-vindas usando a fila (garantindo que as tags existem)
-        self.output_queue.put(('__BOT__', 'Bem-vindo ao Chatbot RAG!\n'))
-        self.output_queue.put(('__BOT__', 'Digite sua pergunta e pressione Enter.\n\n'))
+        # Mensagens de boas-vindas estilo retro/DOS
+        self.output_queue.put(('__BOT__', '╔════════════════════════════════════════════════╗\n'))
+        self.output_queue.put(('__BOT__', '║  CHATBOT RAG v1.0 - SISTEMA INICIALIZADO      ║\n'))
+        self.output_queue.put(('__BOT__', '║  (C) 2025 - RAG TERMINAL SYSTEMS               ║\n'))
+        self.output_queue.put(('__BOT__', '╚════════════════════════════════════════════════╝\n\n'))
+        self.output_queue.put(('__BOT__', 'Digite sua pergunta no prompt e pressione ENTER.\n'))
+        self.output_queue.put(('__BOT__', 'Digite [?] HELP para ver comandos disponíveis.\n\n'))
         self.output_queue.put('__SHOW_PROMPT__')
         
     def write_to_terminal(self, text, bot=True, color_tag=None):
@@ -501,28 +540,29 @@ class ChatbotRAGGUI:
             
             # Inicializar cross-encoder para re-ranking (se disponível)
             if RERANK_SUPPORT:
-                self.output_queue.put(('__BOT__', '📊 Carregando modelo de re-ranking...\n'))
+                self.output_queue.put(('__BOT__', '>>> LOADING: Cross-Encoder Re-Ranking Module...\n'))
                 self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-                self.output_queue.put(('__BOT__', '✅ Re-ranking habilitado!\n'))
+                self.output_queue.put(('__BOT__', '>>> STATUS: Re-ranking [ENABLED]\n'))
             else:
-                self.output_queue.put(('__BOT__', '⚠️  Re-ranking desabilitado (instale sentence-transformers)\n'))
+                self.output_queue.put(('__BOT__', '>>> WARNING: Re-ranking [DISABLED] - Install sentence-transformers\n'))
             
             self._build_rag_chain()
-            self.output_queue.put(('__BOT__', '✅ Modelos prontos para uso!\n'))
+            self.output_queue.put(('__BOT__', '\n>>> SYSTEM READY - All models loaded successfully!\n'))
+            self.output_queue.put(('__BOT__', '>>> Type your query below:\n'))
         except Exception as e:
-            self.output_queue.put(('__BOT__', f'❌ Erro na inicialização: {e}\n'))
-            self.output_queue.put(('__BOT__', 'Verifique se o Ollama está rodando com os modelos necessários.\n'))
+            self.output_queue.put(('__BOT__', f'\n>>> ERROR: Initialization failed - {e}\n'))
+            self.output_queue.put(('__BOT__', '>>> CHECK: Verify Ollama is running with required models.\n'))
         finally:
             self.output_queue.put('__SHOW_PROMPT__')
 
     def _chat_worker(self, query):
         try:
             if not self.rag_chain:
-                self.output_queue.put(('__BOT__', '\nModelos ainda não foram inicializados. Aguarde...\n\n'))
+                self.output_queue.put(('__BOT__', '\n>>> ERROR: Models not initialized. Please wait...\n\n'))
                 return
 
-            # Mensagem simples de processamento
-            self.output_queue.put(('__BOT__', '...\n'))
+            # Mensagem simples de processamento estilo terminal
+            self.output_queue.put(('__BOT__', '>>> PROCESSING QUERY...\n'))
             
             # Buscar mais documentos inicialmente para ter opções para re-ranking
             initial_k = 10 if self.reranker else 4
@@ -568,8 +608,9 @@ Resposta:"""
             
             chain = prompt | self.llm | StrOutputParser()
             
-            # Enviar cabeçalho da resposta
-            self.output_queue.put(('__BOT__', '\n🤖 Resposta:\n'))
+            # Enviar cabeçalho da resposta estilo terminal
+            self.output_queue.put(('__BOT__', '\n>>> OUTPUT:\n'))
+            self.output_queue.put(('__BOT__', '─' * 60 + '\n'))
             
             # STREAMING: Receber e enviar chunks em tempo real
             for chunk in chain.stream({'context': context, 'question': query}):
@@ -578,10 +619,11 @@ Resposta:"""
             
             # Quebra de linha final após a resposta completa
             self.output_queue.put(('__BOT__', '\n'))
+            self.output_queue.put(('__BOT__', '─' * 60 + '\n'))
             
-            # Citar fontes com trechos relevantes
+            # Citar fontes com trechos relevantes estilo retro
             if relevant_docs:
-                self.output_queue.put(('__SOURCE_HEADER__', '\n📚 Fontes consultadas:\n\n'))
+                self.output_queue.put(('__SOURCE_HEADER__', '\n>>> SOURCES REFERENCED:\n\n'))
                 for idx, doc in enumerate(relevant_docs, 1):
                     source = doc.metadata.get('source', 'Fonte desconhecida')
                     # Extrair apenas o nome do arquivo
@@ -609,7 +651,7 @@ Resposta:"""
                     fonte_msg = f'  [{idx}] {source_name}{page_info}\n      "{snippet}"\n\n'
                     self.output_queue.put(('__SOURCE_ITEM__', fonte_msg))
         except Exception as e:
-            self.output_queue.put(('__BOT__', f'\n❌ Erro: {str(e)}\n\n'))
+            self.output_queue.put(('__BOT__', f'\n>>> ERROR: {str(e)}\n\n'))
         finally:
             self.processing = False
             self.output_queue.put('__SHOW_PROMPT__')
