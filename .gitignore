@@ -1,3 +1,38 @@
-./venv
-./__pycache__
-./meu_armazem_chroma
+# Ambiente virtual Python
+.venv/
+venv/
+env/
+ENV/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Banco de dados ChromaDB
+meu_armazem_chroma/
+
+# Build e dist (PyInstaller, etc)
+build/
+dist/
+*.spec
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.bak
